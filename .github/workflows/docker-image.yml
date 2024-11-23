@@ -7,18 +7,87 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Fazer checkout do código
     - name: Checkout code
-      uses: actions/checkout@v4  # Apenas uma vez
+      uses: actions/checkout@v4
 
-    - name: Build the Docker image with Mysql
-      run: docker buildx build -f ./mysql/Dockerfile -t my-image-name:mysql-$(date +%s) ./mysql
+    # 2. Configurar Docker Compose
+    - name: Set up Docker Compose environment
+      run: |
+        echo "version: '3.8'
+        services:
+          mysql:
+            build:
+              context: ./mysql
+              dockerfile: Dockerfile
+            environment:
+              MYSQL_ROOT_PASSWORD: root
+              MYSQL_DATABASE: projeto
+              MYSQL_USER: root
+              MYSQL_PASSWORD: pass
+            ports:
+              - '3306:3306' # Banco de dados na porta 3306
+            healthcheck:
+              test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+              interval: 10s
+              timeout: 5s
+              retries: 5
+            networks:
+              - app-network
 
-    - name: Build the Docker image Api
-      run: docker buildx build -f ./api-php/Dockerfile -t my-image-name:api-$(date +%s) ./api-php
+          api:
+            build:
+              context: ./api-php
+              dockerfile: Dockerfile
+            depends_on:
+              mysql:
+                condition: service_healthy
+            ports:
+              - '8000:80' # Mapeando API na porta 8000
+            networks:
+              - app-network
 
-    - name: Build the Docker image FrontEnd
-      run: docker buildx build -f ./frontend-react/Dockerfile -t my-image-name:frontend-$(date +%s) ./frontend-react
+          frontend:
+            build:
+              context: ./frontend-react
+              dockerfile: Dockerfile
+            depends_on:
+              api:
+                condition: service_started
+            ports:
+              - '3000:3000' # Mapeando Frontend na porta 3000
+            networks:
+              - app-network
+
+        networks:
+          app-network:
+            driver: bridge" > docker-compose.yml
+
+    # 3. Subir apenas o banco de dados primeiro
+    - name: Start MySQL
+      run: docker-compose up -d mysql
+
+    # 4. Esperar o banco de dados estar pronto
+    - name: Wait for MySQL to be healthy
+      run: docker-compose ps mysql
+
+    # 5. Subir a API e o FrontEnd
+    - name: Start API and FrontEnd
+      run: docker-compose up -d api frontend
+
+    # 6. Testar a API
+    - name: Test API health
+      run: curl -f http://localhost:8000 || (echo "API failed to start" && exit 1)
+
+    # 7. Testar o FrontEnd
+    - name: Test FrontEnd health
+      run: curl -f http://localhost:3000 || (echo "Frontend failed to start" && exit 1)
+
+    # 8. Derrubar os serviços
+    - name: Tear down services
+      if: always()
+      run: docker-compose down
