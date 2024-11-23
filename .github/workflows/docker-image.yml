@@ -15,4 +15,5 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build . --file ./mysql/Dockerfile --tag my-image-name:$(date +%s) ./mysql
+      run: docker buildx build -f ./mysql/Dockerfile -t my-image-name:$(date +%s) ./mysql
+
