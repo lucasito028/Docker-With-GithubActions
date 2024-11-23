@@ -7,13 +7,18 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker buildx build -f ./mysql/Dockerfile -t my-image-name:$(date +%s) ./mysql
+    - name: Checkout code
+      uses: actions/checkout@v4  # Apenas uma vez
 
+    - name: Build the Docker image with Mysql
+      run: docker buildx build -f ./mysql/Dockerfile -t my-image-name:mysql-$(date +%s) ./mysql
+
+    - name: Build the Docker image Api
+      run: docker buildx build -f ./api-php/Dockerfile -t my-image-name:api-$(date +%s) ./api-php
+
+    - name: Build the Docker image FrontEnd
+      run: docker buildx build -f ./frontend-react/Dockerfile -t my-image-name:frontend-$(date +%s) ./frontend-react
