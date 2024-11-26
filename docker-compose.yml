@@ -12,6 +12,7 @@ services:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
+    restart: always  
 
   api-node:
     build:
@@ -20,12 +21,13 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - mysql
+      - mysql 
     environment:
       DB_HOST: mysql
       DB_USER: usuario
       DB_PASSWORD: senha
       DB_DATABASE: teste_db
+    restart: always  
 
   frontend-php:
     build:
@@ -34,4 +36,5 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - api-node
+      - api-node  
+    restart: always  

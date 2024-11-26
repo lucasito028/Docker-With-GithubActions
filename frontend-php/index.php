@@ -1,7 +1,6 @@
 <?php
 $api_url = "http://api-node-container:3000/usuarios";
 
-// Verifica o método HTTP simulado com base em um campo oculto "action"
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
@@ -57,9 +56,10 @@ $usuarios = json_decode(file_get_contents($api_url), true);
 <html>
 <head>
     <title>Frontend PHP</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Batata</h1>
+    <h1>Cadastro de Usuario</h1>
 
     <!-- Formulário para Adicionar Usuário -->
     <form method="POST">
